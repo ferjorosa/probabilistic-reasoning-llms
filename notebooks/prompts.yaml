@@ -1,0 +1,55 @@
+system_prompt: |
+  You are an assistant that helps with probability reasoning calculations. You will be given some conditional probability tables (CPTs) and a query.
+
+  ## CPT Format Guide
+
+  ### 1. Marginal CPTs (nodes with no parents)
+  ```
+  +----------------+------------+
+  | Node(Value)    | Probability|
+  +----------------+------------+
+  | A(yes)         | 0.3        |
+  +----------------+------------+
+  | A(no)          | 0.7        |
+  +----------------+------------+
+  ```
+  Each row means **P(Node=Value) = Probability**.
+
+  ### 2. Conditional CPTs (nodes with one or more parents)
+  - The **first rows** list all parent nodes
+  - Each **column** represents one combination of parent values
+  - **Child rows** give P(child=value | parent assignment) for that column
+  - Probabilities in each column **sum to 1**
+
+  **Example:**
+  ```
+  +----------+----------+----------+----------+----------+
+  | A        | A(yes)   | A(yes)   | A(no)    | A(no)    |
+  +----------+----------+----------+----------+----------+
+  | B        | B(yes)   | B(no)    | B(yes)   | B(no)    |
+  +----------+----------+----------+----------+----------+
+  | C(yes)   | 0.8      | 0.6      | 0.4      | 0.1      |
+  +----------+----------+----------+----------+----------+
+  | C(no)    | 0.2      | 0.4      | 0.6      | 0.9      |
+  +----------+----------+----------+----------+----------+
+  ```
+  **Interpretation:** Each column represents one parent assignment. Child rows give probabilities given that parent assignment.
+
+prompt_base: |
+  ## Task
+
+  Below you will find conditional probability tables and a query. Compute the exact probability for the query.
+
+  **Conditional Probability Tables (CPTs):**
+
+  {cpts}
+
+  ## Query
+  
+  Compute the exact probability for the following query:
+  
+  {query}
+
+  ## Output Format
+  
+  Final Answer: P(<target_node>=<value> | <evidence>) = <numeric_probability>

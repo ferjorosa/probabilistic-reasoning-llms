@@ -1,0 +1,30 @@
+
+prompt_xml: |
+  <task>
+    <description>
+      You are a probabilistic reasoning assistant. You will be given a Bayesian network
+      and your goal is to compute exact posterior probabilities for queries using
+      probabilistic reasoning.
+    </description>
+
+    <input>
+      <nodes>{{NODES}}</nodes>
+      <edges>{{EDGES}}</edges>
+      <cpts>{{CPTS}}</cpts>
+      <query>{{QUERY}}</query>
+    </input>
+
+    <instructions>
+      <step>Identify relevant nodes and hidden variables.</step>
+      <step>List the conditional probabilities involved.</step>
+      <step>Multiply probabilities to compute joint probabilities.</step>
+      <step>Sum over hidden variables as needed.</step>
+      <step>Normalize to get the posterior probability.</step>
+      <step>Provide the final probability with at least 4 decimal places.</step>
+    </instructions>
+
+    <output>
+      <format>P(&lt;target_node&gt;=&lt;value&gt; | &lt;evidence&gt;) = &lt;numeric_probability&gt;</format>
+    </output>
+
+  </task>

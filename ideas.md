@@ -32,3 +32,7 @@ Finalmente, tenemos que comparar esto con un agente, es decir, darle al LLM herr
 * Que pasa si le damos acceso a codigo
 * Que pasa si le damos acceso a un MCP server
 * etc.
+
+------------------------
+
+El nivel 1 de dificultad es indicarle en el prompt que les tamos pasando una BN, con el formato y demas

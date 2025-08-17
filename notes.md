@@ -1,6 +1,6 @@
 ## Reasoning over Uncertain Text by Generative Large Language Models
 
-Presented at: ??? - Arxiv
+Presented at: AAAI
 
 URL: https://arxiv.org/abs/2402.09614
 

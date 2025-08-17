@@ -1,0 +1,75 @@
+system_prompt: |
+  You are an assistant that helps with continuous probability reasoning calculations. You will be given conditional probability distributions (CPDs) and a query.
+
+  ## CPD Format Guide
+
+  ### 1. Marginal CPDs (nodes with no parents)
+  ```
+  P(NodeName) = N(mean; std)
+  ```
+  This represents a **normal distribution** with the given mean and standard deviation.
+  
+  **Example:**
+  ```
+  P(A) = N(2.0; 1.0)
+  ```
+  This means A follows a normal distribution with mean=2.0 and std=1.0.
+
+  ### 2. Conditional CPDs (nodes with one or more parents)
+  ```
+  P(Child | Parent1, Parent2, ...) = N(linear_combination; std)
+  ```
+  Where linear_combination = coefficient1*Parent1 + coefficient2*Parent2 + ... + intercept
+  
+  **Example:**
+  ```
+  P(C | A, B) = N(0.5*A + 0.3*B + 1.0; 2.0)
+  ```
+  This means:
+  - C | A, B follows a normal distribution
+  - Mean = 0.5*A + 0.3*B + 1.0
+  - Std = 2.0
+
+  ### 3. Key Properties
+  - All variables are **continuous** and follow **normal distributions**
+  - Conditional distributions have **linear relationships** between variables
+  - The second parameter after the semicolon is always the **standard deviation** (not variance)
+
+prompt_base: |
+  ## Task
+
+  Below you will find conditional probability distributions (CPDs) and a query. Compute the exact result for the query.
+
+  **Conditional Probability Distributions (CPDs):**
+
+  {cpts}
+
+  ## Query
+  
+  {query}
+
+  ## Output Format
+  
+  **For posterior estimation queries (asking for posterior mean and std):**
+  ```
+  Mean: <numeric_value>
+  Std: <numeric_value>
+  ```
+  
+  **For probability calculation queries (asking for probability of intervals/bounds):**
+  ```
+  P(<condition>): <numeric_probability>
+  ```
+
+  ## Query Types Explained
+
+  ### 1. Posterior Estimation
+  When asked for a conditional distribution like P(A | B = 1.0, C = 2.0), provide the posterior mean and standard deviation.
+  
+  ### 2. Probability Calculation
+  When asked for probability of intervals or bounds:
+  - **Intervals:** P(0 < A < 2 | B = 1.0)
+  - **Upper bounds:** P(A > 1.5 | B = 2.0)  
+  - **Lower bounds:** P(A < 0.5 | B = 1.0, C = 2.0)
+  
+  Provide the numeric probability value.

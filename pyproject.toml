@@ -7,11 +7,16 @@ requires-python = ">=3.12.3"
 
 dependencies = [
     "jupyter>=1.1.1",
-    "matplotlib>=3.10.5",
+    "matplotlib>=3.9.0",
     "openai>=1.99.9",
     "pgmpy>=1.0.0",
-    "pyparsing>=3.2.3",
+    "pyro-ppl>=1.9.1",
+    "torch>=2.9.0.dev20250824",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-nightly"
+url = "https://download.pytorch.org/whl/nightly/cu128"
 
 [dependency-groups]
 dev = [

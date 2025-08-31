@@ -1,0 +1,1 @@
+We know that there are times when the categorical distribution may "flip", i.e., [0.8, 0.2] instead of [0.2, 0.8]. How would this affect the estimation of exepcted utility?

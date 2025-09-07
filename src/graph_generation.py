@@ -8,7 +8,18 @@ The key insight is that treewidth correlates with exact inference hardness in Ba
 networks, making it a crucial parameter for systematic evaluation of LLM performance
 on probabilistic reasoning tasks.
 
+REPRODUCIBILITY NOTES:
+- Seeds are set for both numpy.random and Python's random module
+- Reproducibility is guaranteed on the same system with same library versions
+- Cross-platform reproducibility may vary due to:
+  * Different Python versions (3.8 vs 3.12)
+  * Different NetworkX versions (3.x vs 4.x)  
+  * Different NumPy versions (1.x vs 2.x)
+  * Different architectures (x86_64 vs ARM64)
+- For maximum reproducibility, use identical environments (Docker recommended)
+
 Main Functions:
+    - generate_node_names(): Creates node names using different strategies
     - generate_graph_with_target_treewidth(): Creates graphs with approximate treewidth
     - undirected_to_dag(): Converts undirected graphs to DAGs using various methods
     - generate_dag_with_treewidth(): Main function combining graph generation and DAG conversion
@@ -18,25 +29,158 @@ Key Design Decisions:
     - Use 'random' or 'topological' DAG conversion methods to preserve treewidth
     - Avoid 'bfs' and 'dfs' methods as they create spanning trees (treewidth = 1)
     - Iterative method provides approximate treewidth with diverse structures
+    - Support multiple node naming strategies to test LLM robustness
 
 Example Usage:
-    >>> # Generate a single DAG with treewidth 3
+    >>> # Generate a single DAG with simple node names
     >>> dag, achieved_tw, metadata = generate_dag_with_treewidth(
-    ...     n_nodes=10, target_treewidth=3, dag_method='random'
+    ...     n_nodes=10, target_treewidth=3, node_naming='simple'
     ... )
-    >>> print(f"Achieved treewidth: {achieved_tw}")
+    >>> print(f"Nodes: {list(dag.nodes())[:3]}")  # ['V0', 'V1', 'V2']
     
-    >>> # Analyze generated DAG properties
-    >>> properties = analyze_graph_properties(dag)
-    >>> print(f"Treewidth: {properties['treewidth']}, Density: {properties['density']:.3f}")
+    >>> # Generate with confusing names to test LLM robustness
+    >>> dag, achieved_tw, metadata = generate_dag_with_treewidth(
+    ...     n_nodes=8, target_treewidth=2, node_naming='confusing'
+    ... )
+    >>> print(f"Confusing nodes: {list(dag.nodes())[:2]}")  # ['X_7a4f2b', 'Q_9c1e8d']
 
 Author: Generated for LLM probabilistic reasoning research
 """
 
 import networkx as nx
 import numpy as np
+import random
+import string
 from typing import List, Tuple, Optional, Dict, Any
 from networkx.algorithms.approximation import treewidth
+
+
+def generate_node_names(n_nodes: int, 
+                       strategy: str = 'simple',
+                       seed: Optional[int] = None) -> List[str]:
+    """
+    Generate node names using different strategies for LLM experiments.
+    
+    Different naming strategies can help test how node names affect LLM
+    probabilistic reasoning performance.
+    
+    Args:
+        n_nodes: Number of node names to generate
+        strategy: Naming strategy ('simple', 'confusing', 'semantic', 'mixed')
+        seed: Random seed for reproducible name generation
+        
+    Returns:
+        List of node names
+        
+    Strategies:
+        - 'simple': V0, V1, V2, ... (clear and systematic)
+        - 'confusing': X_445aFa, S_af3a34, ... (random alphanumeric)
+        - 'semantic': meaningful names like 'Rain', 'Sprinkler', 'WetGrass'
+        - 'mixed': combination of different strategies
+        
+    Example:
+        >>> names = generate_node_names(3, 'simple')
+        >>> print(names)
+        ['V0', 'V1', 'V2']
+        
+        >>> names = generate_node_names(3, 'confusing', seed=42)
+        >>> print(names)
+        ['X_7a4f2b', 'Q_9c1e8d', 'Z_3b6a9f']
+    """
+    if seed is not None:
+        np.random.seed(seed)
+        random.seed(seed)
+    
+    if strategy == 'simple':
+        return [f'V{i}' for i in range(n_nodes)]
+    
+    elif strategy == 'confusing':
+        names = []
+        prefixes = list(string.ascii_uppercase)
+        for i in range(n_nodes):
+            prefix = np.random.choice(prefixes)
+            # Generate random alphanumeric suffix
+            chars = string.ascii_lowercase + string.digits
+            suffix = ''.join(np.random.choice(list(chars), size=6))
+            names.append(f'{prefix}_{suffix}')
+        return names
+    
+    elif strategy == 'semantic':
+        # Common semantic names for Bayesian networks
+        semantic_names = [
+            'Rain', 'Sprinkler', 'WetGrass', 'Cloudy', 'Season',
+            'Temperature', 'Humidity', 'Wind', 'Pressure', 'Visibility',
+            'Traffic', 'Accident', 'Weather', 'Road', 'Time',
+            'Age', 'Gender', 'Income', 'Education', 'Health',
+            'Smoking', 'Exercise', 'Diet', 'Stress', 'Sleep',
+            'Disease', 'Symptom', 'Treatment', 'Recovery', 'Test',
+            'Cause', 'Effect', 'Factor', 'Outcome', 'Risk',
+            'Signal', 'Noise', 'Data', 'Model', 'Prediction'
+        ]
+        
+        if n_nodes <= len(semantic_names):
+            return list(np.random.choice(semantic_names, size=n_nodes, replace=False))
+        else:
+            # If we need more names than available, cycle through and add numbers
+            base_names = list(np.random.choice(semantic_names, size=len(semantic_names), replace=False))
+            names = base_names.copy()
+            counter = 1
+            while len(names) < n_nodes:
+                for base_name in base_names:
+                    if len(names) >= n_nodes:
+                        break
+                    names.append(f'{base_name}{counter}')
+                counter += 1
+            return names[:n_nodes]
+    
+    elif strategy == 'mixed':
+        # Mix of different strategies
+        names = []
+        strategies = ['simple', 'confusing', 'semantic']
+        
+        for i in range(n_nodes):
+            chosen_strategy = np.random.choice(strategies)
+            if chosen_strategy == 'simple':
+                names.append(f'V{i}')
+            elif chosen_strategy == 'confusing':
+                prefix = np.random.choice(list(string.ascii_uppercase))
+                chars = string.ascii_lowercase + string.digits
+                suffix = ''.join(np.random.choice(list(chars), size=4))
+                names.append(f'{prefix}_{suffix}')
+            else:  # semantic
+                semantic_options = ['Factor', 'Node', 'Variable', 'Element', 'Component']
+                base = np.random.choice(semantic_options)
+                names.append(f'{base}{i}')
+        
+        return names
+    
+    else:
+        raise ValueError(f"Unknown strategy: {strategy}. Use 'simple', 'confusing', 'semantic', or 'mixed'")
+
+
+def relabel_graph_nodes(G: nx.Graph, 
+                       node_names: List[str]) -> nx.Graph:
+    """
+    Relabel graph nodes with custom names.
+    
+    Args:
+        G: NetworkX graph with default node labels (0, 1, 2, ...)
+        node_names: List of new node names (must match number of nodes)
+        
+    Returns:
+        New graph with relabeled nodes
+        
+    Raises:
+        ValueError: If number of names doesn't match number of nodes
+    """
+    if len(node_names) != G.number_of_nodes():
+        raise ValueError(f"Number of names ({len(node_names)}) must match number of nodes ({G.number_of_nodes()})")
+    
+    # Create mapping from old labels to new names
+    old_nodes = sorted(G.nodes())  # Ensure consistent ordering
+    mapping = {old_nodes[i]: node_names[i] for i in range(len(old_nodes))}
+    
+    return nx.relabel_nodes(G, mapping)
 
 
 def generate_graph_with_target_treewidth(n_nodes: int, 
@@ -72,8 +216,10 @@ def generate_graph_with_target_treewidth(n_nodes: int,
         - achieved_treewidth: Actual treewidth of the returned graph
         - difference_from_target: |achieved_treewidth - target_treewidth|
     """
+    # Set seed once at the beginning for reproducible results
     if seed is not None:
         np.random.seed(seed)
+        random.seed(seed)
     
     best_graph = None
     best_treewidth = float('inf')
@@ -81,9 +227,6 @@ def generate_graph_with_target_treewidth(n_nodes: int,
     
     for iteration in range(max_iterations):
         # Start with a random tree (treewidth = 1)
-        current_seed = seed + iteration if seed is not None else None
-        if current_seed is not None:
-            np.random.seed(current_seed)
         G = nx.random_labeled_tree(n_nodes)
         
         # Iteratively add edges to increase treewidth
@@ -167,6 +310,7 @@ def undirected_to_dag(G: nx.Graph,
     """
     if seed is not None:
         np.random.seed(seed)
+        random.seed(seed)
     
     if not nx.is_connected(G):
         # Handle each connected component separately
@@ -233,6 +377,7 @@ def generate_dag_with_treewidth(n_nodes: int,
                                target_treewidth: int,
                                dag_method: str = 'random',
                                max_iterations: int = 1000,
+                               node_naming: str = 'simple',
                                seed: Optional[int] = None) -> Tuple[nx.DiGraph, int, Dict[str, Any]]:
     """
     Generate a DAG with approximately the target treewidth.
@@ -252,6 +397,8 @@ def generate_dag_with_treewidth(n_nodes: int,
         dag_method: DAG conversion method ('random', 'topological', 'bfs', 'dfs')
                    Default: 'random' (recommended for treewidth preservation)
         max_iterations: Maximum iterations for treewidth search (default: 1000)
+        node_naming: Node naming strategy ('simple', 'confusing', 'semantic', 'mixed')
+                    Default: 'simple' (V0, V1, V2, ...)
         seed: Random seed for reproducibility
         
     Returns:
@@ -271,13 +418,16 @@ def generate_dag_with_treewidth(n_nodes: int,
         >>> print(f"Target: 3, Achieved: {tw}")
         Target: 3, Achieved: 3
         
-        >>> # Generate with more iterations for better approximation
+        >>> # Generate with confusing node names to test LLM robustness
         >>> dag, tw, meta = generate_dag_with_treewidth(
-        ...     n_nodes=15, target_treewidth=4, max_iterations=2000
+        ...     n_nodes=8, target_treewidth=2, node_naming='confusing'
         ... )
+        >>> print(list(dag.nodes())[:3])
+        ['X_7a4f2b', 'Q_9c1e8d', 'Z_3b6a9f']
     """
     if seed is not None:
         np.random.seed(seed)
+        random.seed(seed)
     
     if target_treewidth >= n_nodes:
         raise ValueError(f"target_treewidth ({target_treewidth}) must be less than n_nodes ({n_nodes})")
@@ -286,7 +436,8 @@ def generate_dag_with_treewidth(n_nodes: int,
         'dag_method': dag_method,
         'target_treewidth': target_treewidth,
         'n_nodes': n_nodes,
-        'max_iterations': max_iterations
+        'max_iterations': max_iterations,
+        'node_naming': node_naming
     }
     
     # Generate base undirected graph using iterative method
@@ -298,6 +449,12 @@ def generate_dag_with_treewidth(n_nodes: int,
     
     # Convert to DAG
     dag = undirected_to_dag(base_graph, dag_method, seed=seed)
+    
+    # Apply node naming strategy
+    if node_naming != 'default':  # 'default' keeps numeric labels 0, 1, 2, ...
+        node_names = generate_node_names(n_nodes, node_naming, seed=seed)
+        dag = relabel_graph_nodes(dag, node_names)
+        metadata['node_names'] = node_names
     
     # Verify final treewidth of the DAG's underlying undirected graph
     final_undirected = dag.to_undirected()
@@ -315,6 +472,7 @@ def generate_experimental_dataset(n_nodes_list: List[int],
                                 n_samples: int = 5,
                                 dag_method: str = 'random',
                                 max_iterations: int = 1000,
+                                node_naming: str = 'simple',
                                 base_seed: int = 42) -> List[Dict[str, Any]]:
     """
     Generate a dataset of DAGs for systematic LLM probabilistic reasoning experiments.
@@ -328,6 +486,7 @@ def generate_experimental_dataset(n_nodes_list: List[int],
         n_samples: Number of different structures per (n_nodes, treewidth) combination
         dag_method: DAG conversion method ('random' recommended)
         max_iterations: Maximum iterations for treewidth search per sample
+        node_naming: Node naming strategy ('simple', 'confusing', 'semantic', 'mixed')
         base_seed: Base seed for reproducibility (each sample gets base_seed + offset)
         
     Returns:
@@ -371,7 +530,7 @@ def generate_experimental_dataset(n_nodes_list: List[int],
                 
                 try:
                     dag, achieved_tw, metadata = generate_dag_with_treewidth(
-                        n_nodes, target_tw, dag_method, max_iterations, current_seed
+                        n_nodes, target_tw, dag_method, max_iterations, node_naming, current_seed
                     )
                     
                     result = {

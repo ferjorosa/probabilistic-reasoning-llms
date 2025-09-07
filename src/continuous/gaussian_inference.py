@@ -176,3 +176,50 @@ def inference(mean: np.ndarray, cov: np.ndarray,
     
     else: # return_format == 'auto' and multi-variable
         return posterior_mean, posterior_cov
+
+def format_continuous_query(variable, evidence=None, prob_range=None):
+    """
+    Generate formatted query string for continuous variables.
+    
+    Parameters:
+    - variable: string, name of the variable to query
+    - evidence: dict, evidence variables and their values (e.g., {'Xray': -1.0, 'Smoker': 2.0})
+    - prob_range: tuple, (lower, upper) bounds for probability calculation
+                 Use None for unbounded (e.g., (None, 0) for P(X < 0))
+    
+    Returns:
+    - string: formatted query
+    
+    Examples:
+    >>> format_continuous_query('Cancer', {'Xray': -1.0, 'Smoker': 2.0})
+    'P(Cancer | Xray = -1.0, Smoker = 2.0)'
+    
+    >>> format_continuous_query('Pollution', {'Dyspnoea': 0.5}, prob_range=(0, 1))
+    'P(0 < Pollution < 1 | Dyspnoea = 0.5)'
+    
+    >>> format_continuous_query('Cancer', {'Smoker': 2.0, 'Pollution': 0.8}, prob_range=(None, 0))
+    'P(Cancer < 0 | Smoker = 2.0, Pollution = 0.8)'
+    """
+    if prob_range is not None:
+        # Probability calculation query
+        lower, upper = prob_range
+
+        if lower is None:
+            condition = f"{variable} < {upper}"
+        elif upper is None:
+            condition = f"{variable} > {lower}"
+        else:
+            condition = f"{lower} < {variable} < {upper}"
+
+        if evidence:
+            evidence_str = ', '.join([f"{k} = {v}" for k, v in evidence.items()])
+            return f"P({condition} | {evidence_str})"
+        else:
+            return f"P({condition})"
+    else:
+        # Posterior estimation query
+        if evidence:
+            evidence_str = ', '.join([f"{k} = {v}" for k, v in evidence.items()])
+            return f"P({variable} | {evidence_str})"
+        else:
+            return f"P({variable})"        

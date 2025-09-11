@@ -61,6 +61,7 @@ def extract_numeric_answer(response_text: str) -> Optional[float]:
                 return float(matches[-1])
             except ValueError:
                 continue
+    print(response_text)
     return None
 
 

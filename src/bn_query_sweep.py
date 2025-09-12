@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 
 import pandas as pd
@@ -178,6 +178,105 @@ def inspect_row_and_call_llm(
     }
 
 
+def call_llm_for_query(
+    bn: Any,
+    query_vars: List[str],
+    query_states: List[str],
+    evidence: Optional[Dict[str, str]],
+    openai_client: Any = None,
+    model: str = None,
+    prompts_path: Optional[Path] = None,
+) -> Tuple[Optional[float], Optional[str]]:
+    """Call LLM to get probability for a specific query.
+    
+    Args:
+        bn: Bayesian network object
+        query_vars: List of query variable names
+        query_states: List of query variable states
+        evidence: Optional evidence dictionary
+        openai_client: OpenAI client (optional, can be set globally)
+        model: Model name (optional, can be set globally)
+        prompts_path: Path to prompts.yaml file (optional, can be set globally)
+    
+    Returns:
+        Tuple of (llm_probability, llm_response)
+    """
+    # Import here to avoid circular imports
+    import os
+    from openai import OpenAI
+    
+    # Use provided parameters or try to get from global scope
+    if openai_client is None:
+        # Try to get from global scope (notebook context)
+        try:
+            import sys
+            frame = sys._getframe(1)
+            openai_client = frame.f_locals.get('client')
+            if openai_client is None:
+                # Fallback: create new client
+                openai_client = OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key=os.getenv("OPENROUTER_API_KEY")
+                )
+        except:
+            raise ValueError("openai_client must be provided or available in global scope as 'client'")
+    
+    if model is None:
+        try:
+            import sys
+            frame = sys._getframe(1)
+            model = frame.f_locals.get('MODEL')
+            if model is None:
+                model = "deepseek/deepseek-chat-v3.1:free"  # fallback
+        except:
+            model = "deepseek/deepseek-chat-v3.1:free"  # fallback
+    
+    if prompts_path is None:
+        try:
+            import sys
+            frame = sys._getframe(1)
+            prompts_path = frame.f_locals.get('prompt_path')
+            if prompts_path is None:
+                # Fallback: construct path
+                from pathlib import Path
+                prompts_path = Path("notebooks") / "discrete" / "prompts.yaml"
+        except:
+            from pathlib import Path
+            prompts_path = Path("notebooks") / "discrete" / "prompts.yaml"
+    
+    try:
+        # Create system and user prompts using YAML template
+        system_prompt, prompt_str = create_system_and_user_prompts(
+            bn=bn,
+            query_vars=query_vars,
+            query_states=query_states,
+            evidence=evidence,
+            prompts_path=prompts_path,
+        )
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt_str}
+        ]
+        
+        response, _ = run_llm_call(
+            openai_client=openai_client,
+            model=model,
+            messages=messages
+        )
+        
+        if response:
+            numeric_answer = extract_numeric_answer(response)
+            return numeric_answer, response
+        else:
+            return None, None
+            
+    except Exception as e:
+        print(f"Error calling LLM: {e}")
+        return None, None
+
+
 __all__ = [
     "inspect_row_and_call_llm",
+    "call_llm_for_query",
 ]

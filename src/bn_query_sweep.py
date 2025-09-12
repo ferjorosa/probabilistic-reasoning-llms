@@ -251,7 +251,6 @@ def call_llm_for_query(
             evidence=evidence,
             prompts_path=prompts_path,
         )
-        print(prompt_str)
         
         messages = [
             {"role": "system", "content": system_prompt},

@@ -52,16 +52,18 @@ prompt_base: |
 
   ## Output Format
   
-  Provide your final answer in this exact format:
+  Provide your final answer in this EXACT format:
   
   Final Answer: P(<target_node>=<value> | <evidence>) = <numeric_probability>
   
   Where <numeric_probability> is a decimal number between 0 and 1 (e.g., 0.1234).
   
-  IMPORTANT: 
+  CRITICAL REQUIREMENTS: 
   - The numeric probability must be a decimal number between 0 and 1
-  - Use exactly the format: "Final Answer: P(...) = 0.1234"
-  - Do not include any additional text, explanations, or calculations after the numeric value
+  - Use EXACTLY the format: "Final Answer: P(...) = 0.1234"
+  - Do NOT include any additional text, explanations, or calculations after the numeric value
   - If the probability is 0, write "0.0" not "0"
   - If the probability is 1, write "1.0" not "1"
   - Use at least 4 decimal places for precision
+  - The line must end immediately after the numeric value
+  - No trailing spaces, periods, or other characters

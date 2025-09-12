@@ -40,7 +40,7 @@ def run_llm_call(
 
 
 def extract_numeric_answer(response_text: str) -> Optional[float]:
-    """Extract a numeric probability from free-form LLM response text.
+    """Extract a numeric probability from LLM response text.
 
     Looks for patterns like:
       - "Final Answer: P(...) = 0.1234"
@@ -51,20 +51,39 @@ def extract_numeric_answer(response_text: str) -> Optional[float]:
     """
     import re
 
+    if not response_text or not response_text.strip():
+        return None
+
+    # Clean up the response text
+    response_text = response_text.strip()
+    
+    # Patterns in order of preference (most specific first)
     patterns = [
+        # Most specific: "Final Answer: P(...) = 0.1234"
+        r"Final Answer:\s*P\([^)]+\)\s*=\s*([0-9]*\.?[0-9]+)",
+        # General: "Final Answer: ... = 0.1234"
         r"Final Answer:.*?=\s*([0-9]*\.?[0-9]+)",
+        # "= 0.1234" at end of line
         r"=\s*([0-9]*\.?[0-9]+)\s*$",
+        # "probability: 0.1234"
         r"probability[:\s]*([0-9]*\.?[0-9]+)",
+        # Any number at end of text
         r"([0-9]*\.?[0-9]+)\s*$",
     ]
+    
     for pattern in patterns:
         matches = re.findall(pattern, response_text, flags=re.IGNORECASE | re.MULTILINE)
         if matches:
             try:
-                return float(matches[-1])
+                value = float(matches[-1])
+                # Validate that it's a probability (0-1)
+                if 0.0 <= value <= 1.0:
+                    return value
             except ValueError:
                 continue
-    print(response_text)
+    
+    # If no valid probability found, print the response for debugging
+    print(f"Could not extract numeric answer from response: {response_text}")
     return None
 
 
@@ -104,31 +123,21 @@ def create_probability_prompt(
         else:
             query_str = f"P({', '.join(parts)})"
 
-    # Use YAML template if prompts_path is provided
-    if prompts_path is not None and load_yaml is not None:
-        try:
-            prompts = load_yaml(prompts_path)
-            prompt_template = prompts.get("prompt_base", "")
-            if prompt_template:
-                return prompt_template.format(cpts=cpds_as_string, query=query_str)
-        except Exception:
-            # Fall back to default format if YAML loading fails
-            pass
-
-    # Default format (fallback)
-    prompt_str = (
-        "You are a probability calculator. Compute the exact probability for the given query.\n\n"
-        "Conditional Probability Tables:\n"
-        f"{cpds_as_string}\n\n"
-        f"Query: {query_str}\n\n"
-        "Instructions:\n"
-        "1. Use exact inference methods (variable elimination, etc.)\n"
-        "2. Show your work step by step\n"
-        "3. Provide the final answer in this exact format: Final Answer: "
-        f"{query_str} = [NUMBER]\n\n"
-        "Where [NUMBER] is the exact probability as a decimal (e.g., 0.1234)."
-    )
-    return prompt_str
+    # Use YAML template - REQUIRED
+    if prompts_path is None or load_yaml is None:
+        raise ValueError("prompts_path must be provided and yaml_utils must be available")
+    
+    try:
+        prompts = load_yaml(prompts_path)
+        prompt_template = prompts.get("prompt_base", "")
+        
+        if not prompt_template:
+            raise ValueError("prompt_base not found in YAML file")
+            
+        return prompt_template.format(cpts=cpds_as_string, query=query_str)
+        
+    except Exception as e:
+        raise RuntimeError(f"Failed to load prompts from YAML: {e}")
 
 
 def create_system_and_user_prompts(
@@ -176,37 +185,23 @@ def create_system_and_user_prompts(
         else:
             query_str = f"P({', '.join(parts)})"
 
-    # Load prompts from YAML if path provided
-    if prompts_path is not None and load_yaml is not None:
-        try:
-            prompts = load_yaml(prompts_path)
-            system_prompt = prompts.get("system_prompt", "You are a probability calculator. Provide exact numerical answers.")
-            prompt_template = prompts.get("prompt_base", "")
-            if prompt_template:
-                user_prompt = prompt_template.format(cpts=cpds_as_string, query=query_str)
-                return system_prompt, user_prompt
-        except Exception:
-            # Fall back to default format if YAML loading fails
-            pass
-
-    # Default format (fallback)
-    if system_prompt is None:
-        system_prompt = "You are a probability calculator. Provide exact numerical answers."
+    # Load prompts from YAML - REQUIRED
+    if prompts_path is None or load_yaml is None:
+        raise ValueError("prompts_path must be provided and yaml_utils must be available")
     
-    user_prompt = (
-        "You are a probability calculator. Compute the exact probability for the given query.\n\n"
-        "Conditional Probability Tables:\n"
-        f"{cpds_as_string}\n\n"
-        f"Query: {query_str}\n\n"
-        "Instructions:\n"
-        "1. Use exact inference methods (variable elimination, etc.)\n"
-        "2. Show your work step by step\n"
-        "3. Provide the final answer in this exact format: Final Answer: "
-        f"{query_str} = [NUMBER]\n\n"
-        "Where [NUMBER] is the exact probability as a decimal (e.g., 0.1234)."
-    )
-    
-    return system_prompt, user_prompt
+    try:
+        prompts = load_yaml(prompts_path)
+        system_prompt = prompts.get("system_prompt", "You are a probability calculator. Provide exact numerical answers.")
+        prompt_template = prompts.get("prompt_base", "")
+        
+        if not prompt_template:
+            raise ValueError("prompt_base not found in YAML file")
+            
+        user_prompt = prompt_template.format(cpts=cpds_as_string, query=query_str)
+        return system_prompt, user_prompt
+        
+    except Exception as e:
+        raise RuntimeError(f"Failed to load prompts from YAML: {e}")
 
 
 __all__ = [

@@ -34,7 +34,7 @@ def _parse_field(val: Any) -> Any:
     """Parse field values that might be stringified lists/dicts from DataFrame storage."""
     import ast
     import re
-    
+
     if isinstance(val, (list, dict)):
         return val
     if not isinstance(val, str):
@@ -129,23 +129,17 @@ def inspect_row_and_call_llm(
         exact_prob = float(exact_prob)
     print("Exact probability:", exact_prob)
 
-    # Create system and user prompts using YAML template if available
-    system_prompt, prompt_str = create_system_and_user_prompts(
-        bn=bn,
-        query_vars=q_vars,
-        query_states=q_states,
-        evidence=evidence,
-        prompts_path=prompts_path,
-        system_prompt=system_prompt,
-    )
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": prompt_str},
-    ]
-
-    # Print prompts to console if requested
+    # Print prompts to console if requested (before calling LLM)
     if print_prompts:
+        # Create prompts just for display purposes
+        system_prompt, prompt_str = create_system_and_user_prompts(
+            bn=bn,
+            query_vars=q_vars,
+            query_states=q_states,
+            evidence=evidence,
+            prompts_path=prompts_path,
+            system_prompt=system_prompt,
+        )
         print("\n" + "="*50)
         print("SYSTEM PROMPT:")
         print("="*50)
@@ -156,12 +150,16 @@ def inspect_row_and_call_llm(
         print(prompt_str)
         print("="*50 + "\n")
 
-    try:
-        response, _ = run_llm_call(openai_client=openai_client, model=model, messages=messages)
-    except Exception as e:
-        print(f"Error calling LLM: {e}")
-        response = None
-    llm_prob = extract_numeric_answer(response) if response else None
+    # Call LLM using the shared function
+    llm_prob, response = call_llm_for_query(
+        bn=bn,
+        query_vars=q_vars,
+        query_states=q_states,
+        evidence=evidence,
+        openai_client=openai_client,
+        model=model,
+        prompts_path=prompts_path,
+    )
     print("LLM probability:", llm_prob)
 
     delta = None
@@ -253,6 +251,7 @@ def call_llm_for_query(
             evidence=evidence,
             prompts_path=prompts_path,
         )
+        print(prompt_str)
         
         messages = [
             {"role": "system", "content": system_prompt},

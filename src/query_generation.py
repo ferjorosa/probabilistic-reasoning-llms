@@ -7,17 +7,6 @@ import numpy as np
 import networkx as nx
 from pgmpy.models import DiscreteBayesianNetwork
 
-
-@dataclass
-class QuerySpec:
-    # One or two query nodes with chosen states (state labels)
-    targets: List[Tuple[str, str]]
-    # Evidence assignments as mapping node -> state label
-    evidence: Dict[str, str]
-    # Metadata about difficulty dimensions
-    meta: Dict[str, Any]
-
-
 def _to_nx_dag(model: DiscreteBayesianNetwork) -> nx.DiGraph:
     G = nx.DiGraph()
     G.add_nodes_from(model.nodes())

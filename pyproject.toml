@@ -12,12 +12,14 @@ dependencies = [
     "pgmpy>=1.0.0",
     "pyro-ppl>=1.9.1",
     "seaborn>=0.13.0",
-    "torch>=2.9.0.dev20250824",
+    # Only for RTX 5090
+    # "torch>=2.9.0.dev20250824",
 ]
 
-[[tool.uv.index]]
-name = "pytorch-nightly"
-url = "https://download.pytorch.org/whl/nightly/cu128"
+# Only for RTX 5090
+# [[tool.uv.index]]
+# name = "pytorch-nightly"
+# url = "https://download.pytorch.org/whl/nightly/cu128"
 
 [dependency-groups]
 dev = [

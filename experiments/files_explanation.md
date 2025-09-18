@@ -1,0 +1,1 @@
+Vamos a tener 3 tipos de archivos

@@ -9,9 +9,12 @@ dependencies = [
     "jupyter>=1.1.1",
     "matplotlib>=3.9.0",
     "openai>=1.99.9",
+    "pandas>=2.0.0",
     "pgmpy>=1.0.0",
+    "pyarrow>=10.0.0",
     "pyro-ppl>=1.9.1",
     "seaborn>=0.13.0",
+    "tqdm>=4.64.0",
     # Only for RTX 5090
     # "torch>=2.9.0.dev20250824",
 ]

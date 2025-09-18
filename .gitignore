@@ -16,3 +16,6 @@ venv.bak/
 
 # Results
 results/learn/
+
+# Generated datasets
+*.parquet

@@ -1,0 +1,13 @@
+n,target_tw,achieved_tw,naming,arity,alpha,determinism,seed,variant_index,num_edges,num_nodes,bn_index,query_index,query_vars,query_states,evidence,distance,num_evidence,probability,llm_probability,llm_response
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,0,"[np.str_('Z_1y6a0m'), np.str_('Y_nizbt1')]","['s2', 's1']",{},0,0,0.08954838001025212,0.0115,"Final Answer: P(Z_1y6a0m=s2, Y_nizbt1=s1) = 0.0115"
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,1,"[np.str_('G_0ioozm'), np.str_('Z_1y6a0m')]","['s0', 's0']",{},0,0,0.14651389553560276,0.0554,"Final Answer: P(G_0ioozm=s0, Z_1y6a0m=s0) = 0.0554"
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,2,"[np.str_('Z_7j9n4o'), np.str_('G_2ohusw')]","['s0', 's1']",{},0,0,0.5411130920461517,0.5659,"Final Answer: P(Z_7j9n4o=s0, G_2ohusw=s1) = 0.5659"
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,3,"[np.str_('B_f11t3k'), np.str_('O_cguird')]","['s2', 's0']",{},0,0,0.06333041871793281,0.0541,"Final Answer: P(B_f11t3k=s2, O_cguird=s0) = 0.0541"
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,4,"[np.str_('G_0ioozm'), np.str_('I_hl76wx')]","['s0', 's0']",{np.str_('Z_1y6a0m'): 's1'},2,1,0.18486556792348774,0.0172,"Final Answer: P(G_0ioozm=s0, I_hl76wx=s0 | Z_1y6a0m=s1) = 0.0172"
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,5,"[np.str_('Y_nizbt1'), np.str_('I_hl76wx')]","['s1', 's1']",{},0,0,0.10075559186380287,0.1008,"Final Answer: P(Y_nizbt1=s1, I_hl76wx=s1) = 0.1008"
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,0,"[np.str_('B_f11t3k'), np.str_('Z_y2oayg')]","['s0', 's1']",{np.str_('Y_nizbt1'): 's0'},2,1,0.13284454828205572,0.0654,"Final Answer: P(B_f11t3k=s0, Z_y2oayg=s1 | Y_nizbt1=s0) = 0.0654"
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,1,"[np.str_('V_w56asb'), np.str_('L_vy01po')]","['s0', 's1']",{},0,0,0.32323121328243115,0.3007,Final Answer: P(V_w56asb=s0 | L_vy01po=s1) = 0.3007
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,2,"[np.str_('G_2ohusw'), np.str_('O_gh8nq9')]","['s2', 's1']",{},0,0,0.03322216602007777,0.0332,"Final Answer: P(G_2ohusw=s2, O_gh8nq9=s1) = 0.0332"
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,3,"[np.str_('R_dbfd2r'), np.str_('Z_1y6a0m')]","['s0', 's0']",{},0,0,0.08425233725665637,0.0605,"Final Answer: P(R_dbfd2r=s0, Z_1y6a0m=s0) = 0.0605"
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,4,"[np.str_('O_cguird'), np.str_('Z_7j9n4o')]","['s0', 's1']",{},0,0,0.05400172301538208,0.0419,"Final Answer: P(O_cguird=s0, Z_7j9n4o=s1) = 0.0419"
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,5,"[np.str_('L_vy01po'), np.str_('Z_7j9n4o')]","['s1', 's1']",{},0,0,0.3415623931543146,0.3915,Final Answer: P(L_vy01po=s1 | Z_7j9n4o=s1) = 0.3915

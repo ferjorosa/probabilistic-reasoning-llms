@@ -1,0 +1,13 @@
+n,target_tw,achieved_tw,naming,arity,alpha,determinism,seed,variant_index,num_edges,num_nodes,bn_index,query_index,query_vars,query_states,evidence,distance,num_evidence,probability
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,0,[np.str_('K_kx9xcv')],['s2'],{},0,0,0.1725047004352373
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,1,[np.str_('B_f11t3k')],['s0'],{np.str_('Y_nizbt1'): 's1'},2,1,0.5803143696309441
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,2,[np.str_('H_886e1g')],['s1'],{np.str_('O_cguird'): 's0'},3,1,0.290106527954436
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,3,[np.str_('U_bx3bu6')],['s0'],{},0,0,0.5101915299139828
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,4,[np.str_('S_55d3wo')],['s1'],{np.str_('L_vy01po'): 's2'},3,1,0.2305536288587459
+25,5,4,confusing,range:2-3,1.0,0.0,42,0,45,25,0,5,[np.str_('O_gh8nq9')],['s0'],{},0,0,0.3623990685046358
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,0,[np.str_('I_hl76wx')],['s0'],"{np.str_('U_bx3bu6'): 's1', np.str_('I_cfh0i6'): 's1'}",3,2,0.24928390971018988
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,1,[np.str_('S_xo55xl')],['s0'],{},0,0,0.45529020610096405
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,2,[np.str_('Z_1y6a0m')],['s1'],{},0,0,0.4303409385732984
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,3,[np.str_('R_dbfd2r')],['s2'],{},0,0,0.4120828317064799
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,4,[np.str_('R_dbfd2r')],['s0'],{},0,0,0.32127325070948276
+25,5,4,confusing,range:2-3,1.0,0.0,10015,1,45,25,1,5,[np.str_('V_w56asb')],['s0'],"{np.str_('E_ncaezn'): 's0', np.str_('Z_7j9n4o'): 's0'}",2,2,0.4314059904503633

@@ -12,15 +12,11 @@ probabilistic reasoning capabilities.
 Author: Generated for LLM probabilistic reasoning research
 """
 
-import sys
-from pathlib import Path
 from typing import List, Dict, Any
 from tqdm import tqdm
 
-# Add src to path for imports
-sys.path.append(str(Path(__file__).parent.parent / "src"))
-
-from bn_generation import generate_variants_for_dag
+from src.bn_generation import generate_variants_for_dag
+from src.cpd_utils import cpd_to_ascii_table
 
 
 def generate_cpt_variants(
@@ -96,10 +92,15 @@ def generate_cpt_variants(
                             )
                             
                             for (bn, bn_meta) in bn_variants:
-                                # Extract CPDs in both formats
-                                cpd_strings = [str(cpd) for cpd in bn.get_cpds()]
+                                # Extract CPDs in both formats (use custom formatter to avoid truncation)
+                                cpd_strings = [cpd_to_ascii_table(cpd) for cpd in bn.get_cpds()]
                                 cpds_as_string = "\n\n".join(cpd_strings)
-                                cpd_arrays = {cpd.variable: cpd.values for cpd in bn.get_cpds()}
+                                
+                                # Store CPDs in 2D constructor format for easier reconstruction
+                                cpd_arrays = {}
+                                for cpd in bn.get_cpds():
+                                    # Use get_values() method which returns 2D format
+                                    cpd_arrays[cpd.variable] = cpd.get_values()
                                 
                                 # Create complete model entry
                                 model = {

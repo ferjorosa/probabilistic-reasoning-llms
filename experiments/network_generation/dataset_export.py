@@ -15,12 +15,13 @@ import json
 import pandas as pd
 from typing import List, Dict, Any
 from pathlib import Path
+from datetime import datetime
 
 
 def export_networks_dataset(
     cpt_variants: List[Dict[str, Any]], 
     naming_variants: List[Dict[str, Any]],
-    output_path: str = "networks.parquet"
+    output_path: str = "experiments/networks.parquet"
 ) -> pd.DataFrame:
     """
     Export generated Bayesian networks to a HuggingFace-compatible dataset.
@@ -53,12 +54,17 @@ def export_networks_dataset(
         - cpt_seed: Seed for CPT generation
         - sample_idx: Sample index within parameter combination
         - network_description: Full network as string (for LLM prompts)
+        - cpd_arrays: CPD probability arrays as JSON dict {variable: array}
         - nodes: List of node names (JSON array)
         - edges: List of edges as [parent, child] pairs (JSON array)
         - edges_count: Number of edges
+        - created_at: Timestamp when the network was generated (ISO format)
     """
     
     print(f"Exporting {len(cpt_variants)} networks to dataset with DAG structure info...")
+    
+    # Get current timestamp for all networks in this batch
+    created_at = datetime.now().isoformat()
     
     # Create lookup for naming variants by naming_variant_id
     naming_lookup = {nv['naming_variant_id']: nv for nv in naming_variants}
@@ -111,11 +117,15 @@ def export_networks_dataset(
             
             # Network content for LLM experiments
             'network_description': model['cpds_as_string'],
+            'cpd_arrays': json.dumps({var: cpd_array.tolist() for var, cpd_array in model['cpd_arrays'].items()}),
             
             # DAG structure
             'nodes': json.dumps(nodes),  # JSON array of node names
             'edges': json.dumps(edges),  # JSON array of [parent, child] pairs
-            'edges_count': edges_count
+            'edges_count': edges_count,
+            
+            # Metadata
+            'created_at': created_at
         }
         
         records.append(record)

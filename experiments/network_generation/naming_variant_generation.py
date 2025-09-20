@@ -11,15 +11,10 @@ while node naming varies (simple, confusing, semantic, etc.).
 Author: Generated for LLM probabilistic reasoning research
 """
 
-import sys
-from pathlib import Path
 from typing import List, Dict, Any
 from tqdm import tqdm
 
-# Add src to path for imports
-sys.path.append(str(Path(__file__).parent.parent / "src"))
-
-from graph_generation import generate_dag_with_treewidth
+from src.graph_generation import generate_dag_with_treewidth
 
 
 def generate_naming_variants(

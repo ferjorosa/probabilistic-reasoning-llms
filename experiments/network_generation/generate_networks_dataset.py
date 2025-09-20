@@ -33,21 +33,45 @@ def main():
     print("Step 1: Generating base DAG configurations...")
     
     # Parameters (can be adjusted)
-    n_nodes_list = [5, 10, 15, 20, 25]
-    treewidths = [2, 3, 4]
+    n_nodes_list = [10, 15, 20, 25, 30, 35, 40, 45, 50]  # Larger range for better scaling analysis
     dag_methods = ['random']  # Could add 'topological' if needed
-    samples_per_config = 2
+    samples_per_config = 5
     base_seed = 42
+    treewidth_fractions = [0.1, 0.15, 0.2, 0.25, 0.3]  # 10%, 20%, 30%, 50% of nodes
     
+    # Choose ONE of the following approaches:
+    
+    # Option 1: Proportional scaling (recommended for varying node counts)
+
     dag_configs = generate_base_dag_configs(
         n_nodes_list=n_nodes_list,
-        treewidths=treewidths,
+        treewidth_fractions=treewidth_fractions,
         dag_methods=dag_methods,
         samples_per_config=samples_per_config,
         base_seed=base_seed
     )
     
+    # Option 2: Specific treewidth values (uncomment to use instead)
+    # treewidths = [2, 4, 6, 8]  
+    # dag_configs = generate_base_dag_configs(
+    #     n_nodes_list=n_nodes_list,
+    #     treewidths=treewidths,
+    #     dag_methods=dag_methods,
+    #     samples_per_config=samples_per_config,
+    #     base_seed=base_seed
+    # )
+    
     print(f"✓ Generated {len(dag_configs)} base DAG configurations")
+    
+    # Show treewidth scaling for transparency
+    if 'treewidth_fractions' in locals():
+        print("Treewidth scaling (proportional):")
+        from dag_config_generation import get_proportional_treewidths
+        for n_nodes in n_nodes_list:
+            tws = get_proportional_treewidths(n_nodes, treewidth_fractions)
+            fractions_str = ", ".join([f"{f:.2f}" for f in treewidth_fractions])
+            tws_str = ", ".join([str(tw) for tw in tws])
+            print(f"  {n_nodes} nodes (fractions {fractions_str}): treewidths {tws_str}")
     print()
     
     # Step 2: Generate naming variants for each DAG
@@ -66,9 +90,9 @@ def main():
     print("Step 3: Generating CPT variants for each DAG+naming combination...")
     
     # CPT parameters (can be adjusted)
-    arity_specs = [{"type": "range", "min": 2, "max": 3}]
+    arity_specs = [{"type": "range", "min": 2, "max": 4}]
     dirichlet_alphas = [0.5, 1.0]
-    determinism_fracs = [0.0, 0.1]
+    determinism_fracs = [0.0] # indicates percentage of rows with deterministic 0/1 entries
     variants_per_combo = 2
     
     cpt_variants = generate_cpt_variants(
@@ -88,7 +112,7 @@ def main():
     dataset_df = export_networks_dataset(
         cpt_variants=cpt_variants,
         naming_variants=naming_variants,
-        output_path="networks.parquet"
+        output_path="experiments/networks.parquet"
     )
     
     print()

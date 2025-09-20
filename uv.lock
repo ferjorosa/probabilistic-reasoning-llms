@@ -391,43 +391,6 @@ wheels = [
 ]
 
 [[package]]
-name = "decision-theory-llms"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "jupyter" },
-    { name = "matplotlib" },
-    { name = "openai" },
-    { name = "pandas" },
-    { name = "pgmpy" },
-    { name = "pyarrow" },
-    { name = "pyro-ppl" },
-    { name = "seaborn" },
-    { name = "tqdm" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pre-commit" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "jupyter", specifier = ">=1.1.1" },
-    { name = "matplotlib", specifier = ">=3.9.0" },
-    { name = "openai", specifier = ">=1.99.9" },
-    { name = "pandas", specifier = ">=2.0.0" },
-    { name = "pgmpy", specifier = ">=1.0.0" },
-    { name = "pyarrow", specifier = ">=10.0.0" },
-    { name = "pyro-ppl", specifier = ">=1.9.1" },
-    { name = "seaborn", specifier = ">=0.13.0" },
-    { name = "tqdm", specifier = ">=4.64.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pre-commit", specifier = ">=4.0.1" }]
-
-[[package]]
 name = "decorator"
 version = "5.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1546,7 +1509,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "1.108.0"
+version = "1.108.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1558,9 +1521,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/3c/3ea4c40c62d5f4b11690de13de35554d0d49b5e5780669fad5e83562d635/openai-1.108.0.tar.gz", hash = "sha256:e859c64e4202d7f5956f19280eee92bb281f211c41cdd5be9e63bf51a024ff72", size = 564659 }
+sdist = { url = "https://files.pythonhosted.org/packages/25/7a/3f2fbdf82a22d48405c1872f7c3176a705eee80ff2d2715d29472089171f/openai-1.108.1.tar.gz", hash = "sha256:6648468c1aec4eacfa554001e933a9fa075f57bacfc27588c2e34456cee9fef9", size = 563735 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/dc/0a007b7c5a079e13d66eecc5d521bbc67b53c135e2a3131160ef76b5db1f/openai-1.108.0-py3-none-any.whl", hash = "sha256:31f2e58230e2703f13ddbb50c285f39dacf7fca64ab19882fd8a7a0b2bccd781", size = 948114 },
+    { url = "https://files.pythonhosted.org/packages/38/87/6ad18ce0e7b910e3706480451df48ff9e0af3b55e5db565adafd68a0706a/openai-1.108.1-py3-none-any.whl", hash = "sha256:952fc027e300b2ac23be92b064eac136a2bc58274cec16f5d2906c361340d59b", size = 948394 },
 ]
 
 [[package]]
@@ -1771,12 +1734,49 @@ wheels = [
 ]
 
 [[package]]
+name = "probabilistic-reasoning-llms"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "jupyter" },
+    { name = "matplotlib" },
+    { name = "openai" },
+    { name = "pandas" },
+    { name = "pgmpy" },
+    { name = "pyarrow" },
+    { name = "pyro-ppl" },
+    { name = "seaborn" },
+    { name = "tqdm" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "matplotlib", specifier = ">=3.9.0" },
+    { name = "openai", specifier = ">=1.99.9" },
+    { name = "pandas", specifier = ">=2.0.0" },
+    { name = "pgmpy", specifier = ">=1.0.0" },
+    { name = "pyarrow", specifier = ">=10.0.0" },
+    { name = "pyro-ppl", specifier = ">=1.9.1" },
+    { name = "seaborn", specifier = ">=0.13.0" },
+    { name = "tqdm", specifier = ">=4.64.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pre-commit", specifier = ">=4.0.1" }]
+
+[[package]]
 name = "prometheus-client"
-version = "0.22.1"
+version = "0.23.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5e/cf/40dde0a2be27cc1eb41e333d1a674a74ce8b8b0457269cc640fd42b07cf7/prometheus_client-0.22.1.tar.gz", hash = "sha256:190f1331e783cf21eb60bca559354e0a4d4378facecf78f5428c39b675d20d28", size = 69746 }
+sdist = { url = "https://files.pythonhosted.org/packages/23/53/3edb5d68ecf6b38fcbcc1ad28391117d2a322d9a1a3eff04bfdb184d8c3b/prometheus_client-0.23.1.tar.gz", hash = "sha256:6ae8f9081eaaaf153a2e959d2e6c4f4fb57b12ef76c8c7980202f1e57b48b2ce", size = 80481 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/32/ae/ec06af4fe3ee72d16973474f122541746196aaa16cea6f66d18b963c6177/prometheus_client-0.22.1-py3-none-any.whl", hash = "sha256:cca895342e308174341b2cbf99a56bef291fbc0ef7b9e5412a0f26d653ba7094", size = 58694 },
+    { url = "https://files.pythonhosted.org/packages/b8/db/14bafcb4af2139e046d03fd00dea7873e48eafe18b7d2797e73d6681f210/prometheus_client-0.23.1-py3-none-any.whl", hash = "sha256:dd1913e6e76b59cfe44e7a4b83e01afc9873c1bdfd2ed8739f1e76aeca115f99", size = 61145 },
 ]
 
 [[package]]

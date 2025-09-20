@@ -1,7 +1,7 @@
 [project]
-name = "decision-theory-llms"
+name = "probabilistic-reasoning-llms"
 version = "0.1.0"
-description = "Project to investigate the capabilities of LLMs in decision theory problems"
+description = "Project to investigate the capabilities of LLMs in probabilistic reasoning problems"
 readme = "README.md"
 requires-python = ">=3.12.3"
 

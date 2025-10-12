@@ -13,6 +13,7 @@ dependencies = [
     "pyro-ppl>=1.9.1",
     "seaborn>=0.13.0",
     "torch>=2.9.0.dev20250824",
+    "restrictedpython>=8.0"
 ]
 
 [[tool.uv.index]]

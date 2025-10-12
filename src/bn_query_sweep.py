@@ -17,6 +17,8 @@ try:
         extract_numeric_answer,
     )  # type: ignore
     from yaml_utils import load_yaml  # type: ignore
+    from graph_generation import generate_dag_with_treewidth  # type: ignore
+    from bn_generation import generate_variants_for_dag  # type: ignore
 except ModuleNotFoundError:  # pragma: no cover
     from .cpd_utils import cpd_to_ascii_table  # type: ignore
     from .llm_calling import (  # type: ignore
@@ -26,8 +28,113 @@ except ModuleNotFoundError:  # pragma: no cover
         extract_numeric_answer,
     )
     from .yaml_utils import load_yaml  # type: ignore
+    from .graph_generation import generate_dag_with_treewidth  # type: ignore
+    from .bn_generation import generate_variants_for_dag  # type: ignore
 
 
+
+
+def _arity_to_str(spec: Dict[str, Any]) -> str:
+    """Convert arity specification to string representation."""
+    if spec["type"] == "fixed":
+        return f"fixed:{spec['fixed']}"
+    return f"range:{spec['min']}-{spec['max']}"
+
+
+def generate_bayesian_networks_and_metadata(
+    ns: List[int],
+    treewidths: List[int], 
+    arity_specs: List[Dict[str, Any]],
+    dirichlet_alphas: List[float],
+    determinism_fracs: List[float],
+    naming_strategies: List[str],
+    variants_per_combo: int = 4,
+    base_seed: int = 42,
+    max_preview_samples: int = 3
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Any]]:
+    """
+    Generate Bayesian networks and populate metadata rows based on parameter sweeps.
+    
+    This function sweeps over DAG/BN generation parameters and materializes multiple 
+    discrete BN variants per DAG, similar to the logic in BN_generation_sweep.ipynb.
+    
+    Parameters:
+    - ns: List of numbers of variables
+    - treewidths: List of target treewidths
+    - arity_specs: List of arity specifications (fixed or range)
+    - dirichlet_alphas: List of Dirichlet alpha values for CPT skewness
+    - determinism_fracs: List of determinism fractions (mostly 0%)
+    - naming_strategies: List of naming strategies ('simple', 'confusing', 'semantic')
+    - variants_per_combo: Number of variants per parameter combination
+    - base_seed: Base seed for reproducibility
+    - max_preview_samples: Maximum number of preview samples to collect
+    
+    Returns:
+    - Tuple of (all_bayesian_networks, rows, preview_samples)
+        - all_bayesian_networks: List of BN dictionaries with 'bn' and 'meta' keys
+        - rows: List of metadata dictionaries for DataFrame creation
+        - preview_samples: List of BN objects for preview (first few samples)
+    """
+    rows = []
+    preview_samples = []
+    sample_counter = 0
+    all_bayesian_networks = []  # Store all BNs and their metadata
+
+    for n in ns:
+        for tw in treewidths:
+            for naming in naming_strategies:
+                dag, achieved_tw, _ = generate_dag_with_treewidth(
+                    n, tw, node_naming=naming, seed=base_seed + sample_counter
+                )
+                for arity in arity_specs:
+                    for alpha in dirichlet_alphas:
+                        for det in determinism_fracs:
+                            cfgs = []
+                            for i in range(variants_per_combo):
+                                cfgs.append({
+                                    "arity_strategy": arity,
+                                    "dirichlet_alpha": alpha,
+                                    "determinism_fraction": det,
+                                })
+                            variants = generate_variants_for_dag(
+                                dag, cfgs, base_seed=base_seed + sample_counter
+                            )
+                            for idx, (bn, meta) in enumerate(variants):
+                                # Store BN and its metadata for later access
+                                all_bayesian_networks.append({
+                                    "bn": bn,
+                                    "meta": {
+                                        "n": n,
+                                        "target_tw": tw,
+                                        "achieved_tw": achieved_tw,
+                                        "naming": naming,
+                                        "arity": _arity_to_str(arity),
+                                        "alpha": meta["dirichlet_alpha"],
+                                        "determinism": meta["determinism_fraction"],
+                                        "seed": meta["seed"],
+                                        "variant_index": idx,
+                                        "num_edges": bn.number_of_edges(),
+                                        "num_nodes": bn.number_of_nodes(),
+                                    }
+                                })
+                                rows.append({
+                                    "n": n,
+                                    "target_tw": tw,
+                                    "achieved_tw": achieved_tw,
+                                    "naming": naming,
+                                    "arity": _arity_to_str(arity),
+                                    "alpha": meta["dirichlet_alpha"],
+                                    "determinism": meta["determinism_fraction"],
+                                    "seed": meta["seed"],
+                                    "variant_index": idx,
+                                    "num_edges": bn.number_of_edges(),
+                                    "num_nodes": bn.number_of_nodes(),
+                                })
+                                if sample_counter < max_preview_samples:  # collect a few previews
+                                    preview_samples.append(bn)
+                            sample_counter += 1
+
+    return all_bayesian_networks, rows, preview_samples
 
 
 def _parse_field(val: Any) -> Any:
@@ -274,7 +381,244 @@ def call_llm_for_query(
         return None, None
 
 
+def compute_query_complexity(full_df, all_bayesian_networks, row_index, verbose=True):
+    """
+    Compute the complexity metrics for a specific query from a row in full_df.
+    Now properly takes the query into account by only eliminating non-query variables.
+    
+    Parameters:
+    - full_df: DataFrame containing query information
+    - all_bayesian_networks: List of BN dictionaries with 'bn' and 'meta' keys
+    - row_index: Index of the row in full_df to analyze
+    - verbose: If True, print detailed progress information
+    
+    Returns:
+    - dict: Complexity metrics including induced width, total cost, max factor size, etc.
+    """
+    from pgmpy.inference.EliminationOrder import WeightedMinFill
+    from pgmpy.inference import VariableElimination
+    import numpy as np
+    
+    # Get the row data
+    row = full_df.iloc[row_index]
+    bn_index = int(row['bn_index'])
+    
+    # Get the Bayesian network
+    bn = all_bayesian_networks[bn_index]['bn']
+    
+    # Parse query information
+    query_vars = _parse_field(row['query_vars']) or []
+    query_states = _parse_field(row['query_states']) or []
+    evidence = _parse_field(row['evidence']) or {}
+    
+    if verbose:
+        print(f"Computing complexity for query: P({query_vars}={query_states} | {evidence})")
+        print(f"BN: {bn_index}, Query: {int(row['query_index'])}")
+    
+    # Ensure the model is valid
+    bn.check_model()
+    
+    # Get cardinalities
+    card = bn.get_cardinality()
+    if verbose:
+        print(f"Variable cardinalities: {card}")
+    
+    # QUERY-SPECIFIC COMPLEXITY COMPUTATION
+    # Identify which variables need to be eliminated vs kept for the query
+    all_vars = set(bn.nodes())
+    query_vars_set = set(query_vars)
+    evidence_vars_set = set(evidence.keys()) if evidence else set()
+    
+    # Variables that must be kept until the end (query variables)
+    keep_vars = query_vars_set
+    
+    # Variables that can be eliminated (all others)
+    eliminate_vars = all_vars - keep_vars
+    
+    if verbose:
+        print(f"Variables to keep (query): {sorted(keep_vars)}")
+        print(f"Variables to eliminate: {sorted(eliminate_vars)}")
+        print(f"Evidence variables: {sorted(evidence_vars_set)}")
+    
+    # Handle evidence by reducing cardinalities
+    # Evidence variables are instantiated, so they don't contribute to factor sizes
+    effective_card = card.copy()
+    for evar in evidence_vars_set:
+        effective_card[evar] = 1  # Evidence variables are fixed, so cardinality = 1
+    
+    if verbose:
+        print(f"Effective cardinalities (after evidence): {dict(effective_card)}")
+    
+    # Create elimination orderer and get optimal order for variables to eliminate
+    if eliminate_vars:
+        orderer = WeightedMinFill(bn)
+        elim_order = orderer.get_elimination_order(nodes=list(eliminate_vars))
+    else:
+        elim_order = []  # No variables to eliminate
+    
+    if verbose:
+        print(f"Elimination order (variables to eliminate): {elim_order}")
+        if elim_order:
+            complete_elim_order = elim_order + list(keep_vars)
+            print(f"Complete elimination order: {complete_elim_order}")
+    
+    # Calculate induced width for the elimination order
+    if elim_order:
+        # For induced width calculation, we need to create a complete elimination order
+        # that includes all variables, with query variables at the end
+        complete_elim_order = elim_order + list(keep_vars)
+        ve = VariableElimination(bn)
+        induced_width = ve.induced_width(complete_elim_order)
+    else:
+        complete_elim_order = list(keep_vars)  # Only query variables
+        induced_width = 0  # No elimination needed
+    
+    if verbose:
+        print(f"Induced width: {induced_width}")
+    
+    # Simulate variable elimination to compute cost metrics
+    cost = 0
+    max_factor_size = 0
+    moral = bn.to_markov_model()  # moralized undirected graph
+    
+    # Track factor sizes for each elimination step
+    factor_sizes = []
+    
+    for step, x in enumerate(elim_order):
+        nbrs = list(moral.neighbors(x))
+        
+        # Size of the intermediate factor created when eliminating x
+        # Use effective cardinalities (evidence variables have cardinality 1)
+        size = 1
+        for v in nbrs + [x]:
+            size *= effective_card[v]
+        
+        cost += size
+        max_factor_size = max(max_factor_size, size)
+        factor_sizes.append(size)
+        
+        if verbose:
+            print(f"Step {step+1}: Eliminating {x}, neighbors: {nbrs}, factor size: {size}")
+        
+        # Connect neighbors (fill-in) and remove x
+        for i in range(len(nbrs)):
+            for j in range(i+1, len(nbrs)):
+                moral.add_edge(nbrs[i], nbrs[j])
+        moral.remove_node(x)
+    
+    # Calculate final factor size (the remaining query variables)
+    if keep_vars:
+        # The final factor contains all remaining query variables
+        final_factor_size = 1
+        for v in keep_vars:
+            final_factor_size *= effective_card[v]
+        cost += final_factor_size
+        max_factor_size = max(max_factor_size, final_factor_size)
+        if verbose:
+            print(f"Final factor (query variables): {sorted(keep_vars)}, size: {final_factor_size}")
+    
+    # Calculate additional metrics
+    num_vars = len(bn.nodes())
+    num_edges = bn.number_of_edges()
+    
+    # Query-specific metrics
+    num_query_vars = len(query_vars)
+    num_evidence_vars = len(evidence) if evidence else 0
+    num_eliminated_vars = len(elim_order)
+    
+    # Complexity metrics
+    complexity_metrics = {
+        'row_index': row_index,
+        'bn_index': bn_index,
+        'query_index': int(row['query_index']),
+        'query_vars': query_vars,
+        'query_states': query_states,
+        'evidence': evidence,
+        'num_vars': num_vars,
+        'num_edges': num_edges,
+        'num_query_vars': num_query_vars,
+        'num_evidence_vars': num_evidence_vars,
+        'num_eliminated_vars': num_eliminated_vars,
+        'elimination_order': elim_order,
+        'complete_elimination_order': complete_elim_order,
+        'induced_width': induced_width,
+        'total_cost': cost,
+        'max_factor_size': max_factor_size,
+        'avg_factor_size': cost / len(elim_order) if elim_order else 0,
+        'factor_sizes': factor_sizes,
+        'log_total_cost': np.log2(cost) if cost > 0 else 0,
+        'log_max_factor_size': np.log2(max_factor_size) if max_factor_size > 0 else 0,
+        'keep_vars': sorted(keep_vars),
+        'eliminate_vars': sorted(eliminate_vars),
+    }
+    
+    if verbose:
+        print(f"\nQuery-Specific Complexity Summary:")
+        print(f"  Variables eliminated: {num_eliminated_vars}/{num_vars}")
+        print(f"  Query variables kept: {sorted(keep_vars)}")
+        print(f"  Induced width: {induced_width}")
+        print(f"  Total factor work: {cost:,}")
+        print(f"  Max intermediate factor size: {max_factor_size:,}")
+        print(f"  Average factor size: {cost / len(elim_order) if elim_order else 0:.1f}")
+        print(f"  Log2(total cost): {np.log2(cost):.2f}")
+        print(f"  Log2(max factor size): {np.log2(max_factor_size):.2f}")
+    
+    return complexity_metrics
+
+
+def compute_all_query_complexities(full_df, all_bayesian_networks, verbose=False):
+    """
+    Compute complexity metrics for all queries in full_df.
+    
+    Parameters:
+    - full_df: DataFrame containing query information
+    - all_bayesian_networks: List of BN dictionaries with 'bn' and 'meta' keys
+    - verbose: If True, print progress information
+    
+    Returns:
+    - pd.DataFrame: DataFrame with complexity metrics for each query
+    """
+    complexity_results = []
+    
+    for idx in range(len(full_df)):
+        if verbose:
+            print(f"Processing query {idx+1}/{len(full_df)}...")
+        
+        try:
+            result = compute_query_complexity(full_df, all_bayesian_networks, idx, verbose=False)
+            complexity_results.append(result)
+        except Exception as e:
+            print(f"Error processing row {idx}: {e}")
+            # Add a row with error information
+            complexity_results.append({
+                'row_index': idx,
+                'error': str(e),
+                'induced_width': None,
+                'total_cost': None,
+                'max_factor_size': None,
+            })
+    
+    # Convert to DataFrame
+    complexity_df = pd.DataFrame(complexity_results)
+    
+    if verbose:
+        print(f"\nComputed complexity for {len(complexity_results)} queries")
+        if 'error' in complexity_df.columns:
+            successful = len(complexity_df[complexity_df['error'].isna()])
+            failed = len(complexity_df[complexity_df['error'].notna()])
+        else:
+            successful = len(complexity_df)
+            failed = 0
+        print(f"Successful computations: {successful}")
+        print(f"Failed computations: {failed}")
+    
+    return complexity_df
+
+
 __all__ = [
     "inspect_row_and_call_llm",
     "call_llm_for_query",
+    "compute_query_complexity",
+    "compute_all_query_complexities",
+    "generate_bayesian_networks_and_metadata",
 ]

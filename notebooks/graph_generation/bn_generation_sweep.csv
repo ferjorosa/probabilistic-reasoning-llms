@@ -1,5 +1,0 @@
-n,target_tw,achieved_tw,naming,arity,alpha,determinism,seed,variant_index,num_edges,num_nodes
-9,3,3,confusing,range:2-3,1.0,0.0,42,0,12,9
-9,3,3,confusing,range:2-3,1.0,0.0,10015,1,12,9
-9,3,3,confusing,range:2-3,1.0,0.0,19988,2,12,9
-9,3,3,confusing,range:2-3,1.0,0.0,29961,3,12,9

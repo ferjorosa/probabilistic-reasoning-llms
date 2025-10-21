@@ -363,30 +363,12 @@ def call_llm_for_query(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt_str}
         ]
-
-
-        # Set the base path
-        from pathlib import Path
-        base_path = Path("../../")  # One level up from the current working directory
-        # Add the src/ directory to sys.path using base_path
-        sys.path.append(str((base_path / "src").resolve()))
-
-        from tools.python_math_executor import (
-            PYTHON_MATH_EXECUTION_TOOL,
-            execute_python
-        )
-        from tool_calling import run_tool_call_loop # Tool registration
-        tools = [ PYTHON_MATH_EXECUTION_TOOL ]
-        TOOL_MAPPING = {
-            "execute_python": execute_python
-        }
         
-        response, _ = run_tool_call_loop(
+        # Call LLM using the basic run_llm_call function
+        response, _ = run_llm_call(
             openai_client=openai_client,
             model=model,
-            messages=messages,
-            tools=tools,
-            tool_mapping=TOOL_MAPPING
+            messages=messages
         )
         
         if response:

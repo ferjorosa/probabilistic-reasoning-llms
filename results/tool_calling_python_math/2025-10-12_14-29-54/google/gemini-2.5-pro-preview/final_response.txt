@@ -1,1 +1,0 @@
-The probability of A given B, P(A|B), is 0.18.

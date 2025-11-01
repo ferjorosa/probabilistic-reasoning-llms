@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from typing import Optional, Tuple, Dict, Any
 
+def num_edges(bn):
+    # For pgmpy BayesianModel, the edges can be accessed by .edges
+    return len(list(bn.edges()))
+
 def _draw_digraph_hierarchical(G: nx.DiGraph, 
                               title: str = "Network Structure (Hierarchical Layout)",
                               node_size: int = 3000, 

@@ -616,10 +616,46 @@ def compute_all_query_complexities(full_df, all_bayesian_networks, verbose=False
     return complexity_df
 
 
+def count_unobserved_ancestors_and_neighbours(bn, target_nodes, evidence_nodes):
+    """
+    For the given Bayesian network, return both:
+     - the number of unique ancestors of the target_nodes that are not in evidence_nodes
+     - the number of unique neighbors (parents or children, i.e., Markov blanket without evidence or target nodes)
+    Returns (num_unobserved_ancestors, num_unobserved_neighbours), and the sets themselves.
+    """
+    all_ancestors = set()
+    for v in target_nodes:
+        # Recursively collect ancestors using get_parents
+        def get_ancestors(node, bn, visited=None):
+            if visited is None:
+                visited = set()
+            parents = set(bn.get_parents(node))
+            new_parents = parents - visited
+            visited.update(new_parents)
+            for p in new_parents:
+                get_ancestors(p, bn, visited)
+            return visited
+        all_ancestors.update(get_ancestors(v, bn))
+    unobs_ancestors = all_ancestors - set(evidence_nodes)
+
+    all_neighbours = set()
+    for v in target_nodes:
+        # Get parents and children for neighbours
+        parents = set(bn.get_parents(v))
+        children = set(bn.get_children(v))
+        all_neighbours.update(parents)
+        all_neighbours.update(children)
+    # Remove target and evidence nodes
+    unobs_neighbours = all_neighbours - set(target_nodes) - set(evidence_nodes)
+
+    return len(unobs_ancestors), len(unobs_neighbours), unobs_ancestors, unobs_neighbours
+
+
 __all__ = [
     "inspect_row_and_call_llm",
     "call_llm_for_query",
     "compute_query_complexity",
     "compute_all_query_complexities",
     "generate_bayesian_networks_and_metadata",
+    "count_unobserved_ancestors_and_neighbours",
 ]

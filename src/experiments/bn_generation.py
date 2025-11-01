@@ -42,15 +42,15 @@ import matplotlib.pyplot as plt
 
 # Local import: support both `python src/bn_generation.py` and `python -m src.bn_generation`
 try:  # direct import when src/ is on sys.path
-    from graph_generation import generate_dag_with_treewidth  # type: ignore
+    from experiments.graph_generation import generate_dag_with_treewidth  # type: ignore
     from llm_calling import create_probability_prompt, run_llm_call, extract_numeric_answer  # type: ignore
     from yaml_utils import load_yaml  # type: ignore
     from cpd_utils import cpd_to_ascii_table  # type: ignore
 except ModuleNotFoundError:  # relative import when running as a module
     from .graph_generation import generate_dag_with_treewidth  # type: ignore
-    from .llm_calling import create_probability_prompt, run_llm_call, extract_numeric_answer  # type: ignore
-    from .yaml_utils import load_yaml  # type: ignore
-    from .cpd_utils import cpd_to_ascii_table  # type: ignore
+    from ..llm_calling import create_probability_prompt, run_llm_call, extract_numeric_answer  # type: ignore
+    from ..yaml_utils import load_yaml  # type: ignore
+    from ..cpd_utils import cpd_to_ascii_table  # type: ignore
 
 
 # ------------------------------

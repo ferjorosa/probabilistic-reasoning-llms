@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from pathlib import Path
 
 import pandas as pd
@@ -17,17 +17,17 @@ try:
         extract_numeric_answer,
     )  # type: ignore
     from yaml_utils import load_yaml  # type: ignore
-    from graph_generation import generate_dag_with_treewidth  # type: ignore
-    from bn_generation import generate_variants_for_dag  # type: ignore
+    from experiments.graph_generation import generate_dag_with_treewidth  # type: ignore
+    from experiments.bn_generation import generate_variants_for_dag  # type: ignore
 except ModuleNotFoundError:  # pragma: no cover
-    from .cpd_utils import cpd_to_ascii_table  # type: ignore
-    from .llm_calling import (  # type: ignore
+    from ..cpd_utils import cpd_to_ascii_table  # type: ignore
+    from ..llm_calling import (  # type: ignore
         run_llm_call,
         create_probability_prompt,
         create_system_and_user_prompts,
         extract_numeric_answer,
     )
-    from .yaml_utils import load_yaml  # type: ignore
+    from ..yaml_utils import load_yaml  # type: ignore
     from .graph_generation import generate_dag_with_treewidth  # type: ignore
     from .bn_generation import generate_variants_for_dag  # type: ignore
 
@@ -43,7 +43,7 @@ def _arity_to_str(spec: Dict[str, Any]) -> str:
 
 def generate_bayesian_networks_and_metadata(
     ns: List[int],
-    treewidths: List[int], 
+    treewidths: Union[List[int], Dict[int, List[int]]], 
     arity_specs: List[Dict[str, Any]],
     dirichlet_alphas: List[float],
     determinism_fracs: List[float],
@@ -60,7 +60,8 @@ def generate_bayesian_networks_and_metadata(
     
     Parameters:
     - ns: List of numbers of variables
-    - treewidths: List of target treewidths
+    - treewidths: Either a list of target treewidths (same for all n) or a dict mapping 
+      each n to a list of treewidths (different treewidths per n)
     - arity_specs: List of arity specifications (fixed or range)
     - dirichlet_alphas: List of Dirichlet alpha values for CPT skewness
     - determinism_fracs: List of determinism fractions (mostly 0%)
@@ -81,7 +82,15 @@ def generate_bayesian_networks_and_metadata(
     all_bayesian_networks = []  # Store all BNs and their metadata
 
     for n in ns:
-        for tw in treewidths:
+        # Get treewidths for current n: either from dict or use the same list for all n
+        if isinstance(treewidths, dict):
+            n_treewidths = treewidths.get(n, [])
+            if not n_treewidths:
+                raise ValueError(f"No treewidths specified for n={n} in treewidths dictionary")
+        else:
+            n_treewidths = treewidths
+        
+        for tw in n_treewidths:
             for naming in naming_strategies:
                 dag, achieved_tw, _ = generate_dag_with_treewidth(
                     n, tw, node_naming=naming, seed=base_seed + sample_counter

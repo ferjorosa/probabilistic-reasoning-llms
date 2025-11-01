@@ -158,3 +158,21 @@ def draw_networkx_graph(G: nx.DiGraph,
         figsize=figsize,
         show_treewidth=show_treewidth
     )
+
+def compute_average_markov_blanket_size(bn):
+    # Compute Markov blanket for each node: parents, children, and other parents of children
+    node_blankets = []
+    for node in bn.nodes():
+        parents = set(bn.predecessors(node))
+        children = set(bn.successors(node))
+        other_parents = set()
+        for child in children:
+            other_parents.update(bn.predecessors(child))
+        # Markov blanket = parents ∪ children ∪ (other parents of children) minus the node itself
+        blanket = parents | children | other_parents
+        blanket.discard(node)
+        node_blankets.append(len(blanket))
+    if node_blankets:
+        return sum(node_blankets) / len(node_blankets)
+    else:
+        return 0.0

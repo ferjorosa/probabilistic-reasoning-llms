@@ -625,39 +625,149 @@ def compute_all_query_complexities(full_df, all_bayesian_networks, verbose=False
     return complexity_df
 
 
-def count_unobserved_ancestors_and_neighbours(bn, target_nodes, evidence_nodes):
+def get_query_metadata(bn, target_nodes, evidence_nodes):
     """
-    For the given Bayesian network, return both:
-     - the number of unique ancestors of the target_nodes that are not in evidence_nodes
-     - the number of unique neighbors (parents or children, i.e., Markov blanket without evidence or target nodes)
-    Returns (num_unobserved_ancestors, num_unobserved_neighbours), and the sets themselves.
+    Compute various metrics about target and evidence nodes in the Bayesian network.
+    
+    Returns a dictionary with:
+     - avg_markov_blanket_size_evidence: Average markov blanket size for evidence nodes
+     - avg_markov_blanket_size_target: Average markov blanket size for target nodes
+     - min_distance_target_evidence: Minimum distance between any target and evidence node
+     - min_distance_target_target: Minimum distance between any pair of target nodes
+     - min_distance_evidence_evidence: Minimum distance between any pair of evidence nodes
+     - all_evidence_are_roots: Whether all evidence nodes are roots (no parents)
+     - all_evidence_are_leaves: Whether all evidence nodes are leaves (no children)
+     - all_target_are_roots: Whether all target nodes are roots (no parents)
+     - all_target_are_leaves: Whether all target nodes are leaves (no children)
     """
-    all_ancestors = set()
-    for v in target_nodes:
-        # Recursively collect ancestors using get_parents
-        def get_ancestors(node, bn, visited=None):
-            if visited is None:
-                visited = set()
+    import numpy as np
+    
+    # Create undirected graph for distance calculations
+    # Convert BN to undirected NetworkX graph
+    G = nx.Graph()
+    G.add_nodes_from(bn.nodes())
+    G.add_edges_from(bn.edges())  # NetworkX Graph will automatically make edges undirected
+    
+    # 1. Average markov blanket size for evidence nodes
+    if len(evidence_nodes) > 0:
+        mb_sizes_evidence = []
+        for node in evidence_nodes:
             parents = set(bn.get_parents(node))
-            new_parents = parents - visited
-            visited.update(new_parents)
-            for p in new_parents:
-                get_ancestors(p, bn, visited)
-            return visited
-        all_ancestors.update(get_ancestors(v, bn))
-    unobs_ancestors = all_ancestors - set(evidence_nodes)
-
-    all_neighbours = set()
-    for v in target_nodes:
-        # Get parents and children for neighbours
-        parents = set(bn.get_parents(v))
-        children = set(bn.get_children(v))
-        all_neighbours.update(parents)
-        all_neighbours.update(children)
-    # Remove target and evidence nodes
-    unobs_neighbours = all_neighbours - set(target_nodes) - set(evidence_nodes)
-
-    return len(unobs_ancestors), len(unobs_neighbours), unobs_ancestors, unobs_neighbours
+            children = set(bn.get_children(node))
+            mb_size = len(parents) + len(children)
+            mb_sizes_evidence.append(mb_size)
+        avg_mb_evidence = np.mean(mb_sizes_evidence) if mb_sizes_evidence else 0.0
+    else:
+        avg_mb_evidence = 0.0
+    
+    # 2. Average markov blanket size for target nodes
+    if len(target_nodes) > 0:
+        mb_sizes_target = []
+        for node in target_nodes:
+            parents = set(bn.get_parents(node))
+            children = set(bn.get_children(node))
+            mb_size = len(parents) + len(children)
+            mb_sizes_target.append(mb_size)
+        avg_mb_target = np.mean(mb_sizes_target) if mb_sizes_target else 0.0
+    else:
+        avg_mb_target = 0.0
+    
+    # 3. Minimum distance between target and evidence nodes
+    min_dist_target_evidence = float('inf')
+    if len(target_nodes) > 0 and len(evidence_nodes) > 0:
+        for target in target_nodes:
+            for evidence in evidence_nodes:
+                try:
+                    path_length = nx.shortest_path_length(G, target, evidence)
+                    min_dist_target_evidence = min(min_dist_target_evidence, path_length)
+                except nx.NetworkXNoPath:
+                    pass  # No path exists
+        if min_dist_target_evidence == float('inf'):
+            min_dist_target_evidence = None
+    else:
+        min_dist_target_evidence = None
+    
+    # 4. Minimum distance between target nodes
+    min_dist_target_target = float('inf')
+    if len(target_nodes) > 1:
+        for i, target1 in enumerate(target_nodes):
+            for target2 in target_nodes[i+1:]:
+                try:
+                    path_length = nx.shortest_path_length(G, target1, target2)
+                    min_dist_target_target = min(min_dist_target_target, path_length)
+                except nx.NetworkXNoPath:
+                    pass
+        if min_dist_target_target == float('inf'):
+            min_dist_target_target = None
+    else:
+        min_dist_target_target = None
+    
+    # 5. Minimum distance between evidence nodes
+    min_dist_evidence_evidence = float('inf')
+    if len(evidence_nodes) > 1:
+        for i, evidence1 in enumerate(evidence_nodes):
+            for evidence2 in evidence_nodes[i+1:]:
+                try:
+                    path_length = nx.shortest_path_length(G, evidence1, evidence2)
+                    min_dist_evidence_evidence = min(min_dist_evidence_evidence, path_length)
+                except nx.NetworkXNoPath:
+                    pass
+        if min_dist_evidence_evidence == float('inf'):
+            min_dist_evidence_evidence = None
+    else:
+        min_dist_evidence_evidence = None
+    
+    # 6. Whether all evidence are roots (no parents)
+    all_evidence_are_roots = True
+    if len(evidence_nodes) > 0:
+        for node in evidence_nodes:
+            if len(bn.get_parents(node)) > 0:
+                all_evidence_are_roots = False
+                break
+    else:
+        all_evidence_are_roots = None  # No evidence nodes
+    
+    # 7. Whether all evidence are leaves (no children)
+    all_evidence_are_leaves = True
+    if len(evidence_nodes) > 0:
+        for node in evidence_nodes:
+            if len(bn.get_children(node)) > 0:
+                all_evidence_are_leaves = False
+                break
+    else:
+        all_evidence_are_leaves = None  # No evidence nodes
+    
+    # 8. Whether all target are roots (no parents)
+    all_target_are_roots = True
+    if len(target_nodes) > 0:
+        for node in target_nodes:
+            if len(bn.get_parents(node)) > 0:
+                all_target_are_roots = False
+                break
+    else:
+        all_target_are_roots = None  # No target nodes
+    
+    # 9. Whether all target are leaves (no children)
+    all_target_are_leaves = True
+    if len(target_nodes) > 0:
+        for node in target_nodes:
+            if len(bn.get_children(node)) > 0:
+                all_target_are_leaves = False
+                break
+    else:
+        all_target_are_leaves = None  # No target nodes
+    
+    return {
+        'avg_markov_blanket_size_evidence': avg_mb_evidence,
+        'avg_markov_blanket_size_target': avg_mb_target,
+        'min_distance_target_evidence': min_dist_target_evidence,
+        'min_distance_target_target': min_dist_target_target,
+        'min_distance_evidence_evidence': min_dist_evidence_evidence,
+        'all_evidence_are_roots': all_evidence_are_roots,
+        'all_evidence_are_leaves': all_evidence_are_leaves,
+        'all_target_are_roots': all_target_are_roots,
+        'all_target_are_leaves': all_target_are_leaves,
+    }
 
 
 __all__ = [
@@ -667,4 +777,5 @@ __all__ = [
     "compute_all_query_complexities",
     "generate_bayesian_networks_and_metadata",
     "count_unobserved_ancestors_and_neighbours",
+    "get_query_metadata",
 ]

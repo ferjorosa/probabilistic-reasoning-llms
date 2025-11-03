@@ -332,6 +332,13 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
                 else:
                     marginal_values = cpd_values
                 
+                # Get state names from original CPD, preserving only for kept variables
+                original_state_names = cpd.state_names
+                state_names = {node: original_state_names[node]}
+                for parent in kept_parents:
+                    if parent in original_state_names:
+                        state_names[parent] = original_state_names[parent]
+                
                 if len(kept_parents) == 0:
                     marginal_values = marginal_values.flatten()
                     if marginal_values.sum() > 0:
@@ -339,7 +346,8 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
                     else:
                         marginal_values = np.ones(node_card) / node_card
                     marginal_cpd = TabularCPD(variable=node, variable_card=node_card, 
-                                             values=marginal_values.reshape(-1, 1))
+                                             values=marginal_values.reshape(-1, 1),
+                                             state_names=state_names)
                     intermediate_bn.add_cpds(marginal_cpd)
                     cpd_added = True
                 else:
@@ -359,7 +367,8 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
                     marginal_cpd = TabularCPD(variable=node, variable_card=node_card,
                                              values=marginal_values,
                                              evidence=kept_parents,
-                                             evidence_card=kept_parents_cards)
+                                             evidence_card=kept_parents_cards,
+                                             state_names=state_names)
                     intermediate_bn.add_cpds(marginal_cpd)
                     cpd_added = True
         except Exception as e:
@@ -370,8 +379,18 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
             try:
                 node_card = bn.get_cardinality()[node]
                 uniform_values = np.ones((node_card, 1)) / node_card
+                # Try to get state names from original CPD
+                state_names = {}
+                try:
+                    original_cpd = bn.get_cpds(node)
+                    if node in original_cpd.state_names:
+                        state_names = {node: original_cpd.state_names[node]}
+                except:
+                    pass  # If we can't get state names, create CPD without them
+                
                 fallback_cpd = TabularCPD(variable=node, variable_card=node_card,
-                                          values=uniform_values)
+                                          values=uniform_values,
+                                          state_names=state_names if state_names else None)
                 intermediate_bn.add_cpds(fallback_cpd)
             except Exception as e2:
                 if verbose:
@@ -447,6 +466,13 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
                 else:
                     marginal_values = cpd_values
                 
+                # Get state names from intermediate CPD, preserving only for kept variables
+                intermediate_state_names = cpd.state_names
+                state_names = {node: intermediate_state_names[node]}
+                for parent in kept_parents:
+                    if parent in intermediate_state_names:
+                        state_names[parent] = intermediate_state_names[parent]
+                
                 # Now handle the result based on whether we have kept parents
                 if len(kept_parents) == 0:
                     # No parents kept - create marginal distribution
@@ -458,7 +484,8 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
                         # If sum is zero, use uniform
                         marginal_values = np.ones(node_card) / node_card
                     marginal_cpd = TabularCPD(variable=node, variable_card=node_card, 
-                                             values=marginal_values.reshape(-1, 1))
+                                             values=marginal_values.reshape(-1, 1),
+                                             state_names=state_names)
                     reduced_bn.add_cpds(marginal_cpd)
                     cpd_added = True
                 else:
@@ -500,7 +527,8 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
                     marginal_cpd = TabularCPD(variable=node, variable_card=node_card,
                                              values=marginal_values,
                                              evidence=kept_parents,
-                                             evidence_card=kept_parents_cards)
+                                             evidence_card=kept_parents_cards,
+                                             state_names=state_names)
                     reduced_bn.add_cpds(marginal_cpd)
                     cpd_added = True
         except Exception as e:
@@ -514,8 +542,25 @@ def compute_query_complexity(bn, target_nodes, evidence_nodes, verbose=False):
             try:
                 node_card = intermediate_bn.get_cardinality()[node]
                 uniform_values = np.ones((node_card, 1)) / node_card
+                # Try to get state names from intermediate network or original BN
+                state_names = {}
+                try:
+                    # First try from intermediate network
+                    intermediate_cpd = intermediate_bn.get_cpds(node)
+                    if node in intermediate_cpd.state_names:
+                        state_names = {node: intermediate_cpd.state_names[node]}
+                except:
+                    try:
+                        # Fallback to original BN
+                        original_cpd = bn.get_cpds(node)
+                        if node in original_cpd.state_names:
+                            state_names = {node: original_cpd.state_names[node]}
+                    except:
+                        pass  # If we can't get state names, create CPD without them
+                
                 fallback_cpd = TabularCPD(variable=node, variable_card=node_card,
-                                          values=uniform_values)
+                                          values=uniform_values,
+                                          state_names=state_names if state_names else None)
                 reduced_bn.add_cpds(fallback_cpd)
                 if verbose:
                     print(f"Added uniform fallback CPD for {node}")
